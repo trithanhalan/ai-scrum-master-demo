@@ -1,0 +1,11 @@
+__pycache__/
+*.pyc
+.env
+venv/
+node_modules/
+.next/
+dist/
+app.db
+yarn.lock
+package-lock.json
+.DS_Store
