@@ -1,14 +1,14 @@
 from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.db.session import get_db
-from app.models import Token
+from app.models.token import OAuthToken
 from app.jira_client import refresh_if_needed, jira_search_issues
 from app.services.ai import summarize_list
 
 router = APIRouter(prefix="/summarize", tags=["summarize"])
 
-def _get_token(db: Session, account_id: str) -> Token:
-    tk = db.query(Token).filter_by(account_id=account_id).order_by(Token.id.desc()).first()
+def _get_token(db: Session, account_id: str) -> OAuthToken:
+    tk = db.query(OAuthToken).filter_by(account_id=account_id).order_by(OAuthToken.id.desc()).first()
     if not tk:
         raise HTTPException(404, "No token for account")
     return tk
