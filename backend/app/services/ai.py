@@ -1,22 +1,6 @@
-from openai import OpenAI
-from app.config import settings
+# This file is kept for backward compatibility
+# The main OpenAI service is now in openai_client.py
 
-client = OpenAI(api_key=settings.OPENAI_API_KEY)
+from .openai_client import openai_service, summarize_list
 
-def summarize_list(markdown_list: str) -> str:
-    prompt = f"""
-Summarize the following Jira issues into stand-up style points:
-
-{markdown_list}
-
-Format:
-- Yesterday: ...
-- Today: ...
-- Blockers: ...
-"""
-    chat = client.chat.completions.create(
-        model="gpt-4o",
-        messages=[{"role": "user", "content": prompt}],
-        temperature=0.4
-    )
-    return chat.choices[0].message.content.strip()
+__all__ = ["openai_service", "summarize_list"]
