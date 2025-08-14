@@ -2,14 +2,14 @@ from fastapi import APIRouter, Depends, HTTPException
 from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.token import OAuthToken
-from app.services.jira_client import refresh_if_needed, jira_search_issues
+from app.services.jira_client import refresh_if_needed as async_refresh_if_needed, jira_search_issues as async_jira_search_issues
 from app.services.openai_client import openai_service
 from app.telemetry.metrics import record_ai_request, record_jira_api_call
 from app.logging_config import logger
 
 router = APIRouter(prefix="/summarize", tags=["summarize"])
 
-async def _get_token(db: Session, account_id: str) -> OAuthToken:
+def _get_token(db: Session, account_id: str) -> OAuthToken:
     """Get OAuth token for account"""
     tk = db.query(OAuthToken).filter_by(account_id=account_id).order_by(OAuthToken.id.desc()).first()
     if not tk:
@@ -20,12 +20,12 @@ async def _get_token(db: Session, account_id: str) -> OAuthToken:
 async def summarize_standup(accountId: str, db: Session = Depends(get_db)):
     """Generate AI-powered standup summary from recent Jira activity"""
     try:
-        tk = await _get_token(db, accountId)
-        tk = await refresh_if_needed(db, tk)
+        tk = _get_token(db, accountId)
+        tk = await async_refresh_if_needed(db, tk)
         
         # Search for issues updated in the last 24 hours
         jql = "updated >= -1d ORDER BY updated DESC"
-        res = await jira_search_issues(tk, jql)
+        res = await async_jira_search_issues(tk, jql)
         
         record_jira_api_call("search", "success" if "error" not in res else "error")
         
@@ -72,12 +72,12 @@ async def summarize_standup(accountId: str, db: Session = Depends(get_db)):
 async def summarize_blockers(accountId: str, db: Session = Depends(get_db)):
     """Identify and summarize potential blockers from Jira issues"""
     try:
-        tk = await _get_token(db, accountId)
-        tk = await refresh_if_needed(db, tk)
+        tk = _get_token(db, accountId)
+        tk = await async_refresh_if_needed(db, tk)
         
         # Search for potentially blocked issues
         blocked_jql = 'status in ("Blocked", "Stuck", "On Hold", "Waiting") OR summary ~ "blocked" OR summary ~ "blocker" ORDER BY updated DESC'
-        res = await jira_search_issues(tk, blocked_jql)
+        res = await async_jira_search_issues(tk, blocked_jql)
         
         record_jira_api_call("search_blockers", "success" if "error" not in res else "error")
         
@@ -132,8 +132,8 @@ async def generate_retrospective(
     """Generate AI-powered sprint retrospective"""
     try:
         if accountId:
-            tk = await _get_token(db, accountId)
-            tk = await refresh_if_needed(db, tk)
+            tk = _get_token(db, accountId)
+            tk = await async_refresh_if_needed(db, tk)
             
             # Search for sprint-related issues
             if sprintId:
@@ -141,7 +141,7 @@ async def generate_retrospective(
             else:
                 jql = f'project in boardProjects({boardId}) AND sprint in openSprints() ORDER BY updated DESC'
                 
-            res = await jira_search_issues(tk, jql)
+            res = await async_jira_search_issues(tk, jql)
             record_jira_api_call("search_sprint", "success" if "error" not in res else "error")
             
             issues = res.get("issues", [])
@@ -182,6 +182,7 @@ Issue Details:
         else:
             # Fallback to mock data if no authentication
             sprint_data = f"Sprint retrospective requested for Board {boardId}" + (f" Sprint {sprintId}" if sprintId else "")
+            issues = []
         
         # Generate AI retrospective
         record_ai_request("gpt-4o-mini", "retrospective")
