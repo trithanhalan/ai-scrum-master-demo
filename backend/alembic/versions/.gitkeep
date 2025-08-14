@@ -1,0 +1,4 @@
+<file>
+      <absolute_file_name>/app/backend/alembic/versions/.gitkeep</absolute_file_name>
+      <content"># This file ensures the versions directory is tracked by git</content>
+    </file>
