@@ -7,7 +7,7 @@ class Settings(BaseSettings):
     FRONTEND_ORIGIN: str = "http://localhost:3000"
 
     # Database & Cache
-    DATABASE_URL: str = "postgresql+psycopg://postgres:postgres@db:5432/ai_scrum_master"
+    DATABASE_URL: str = "sqlite:///./app.db"  # Default to SQLite for local dev
     REDIS_URL: str = "redis://redis:6379/0"
 
     # JWT Configuration  
