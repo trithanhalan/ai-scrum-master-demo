@@ -1,6 +1,4 @@
-<file>
-      <absolute_file_name>/app/backend/app/services/stream_bus.py</absolute_file_name>
-      <content">import redis
+import redis
 import json
 import uuid
 from typing import Dict, Any, List, Optional
@@ -95,5 +93,3 @@ class RedisStreamBus:
 
 # Global instance
 stream_bus = RedisStreamBus()
-</content>
-    </file>
