@@ -1,10 +1,28 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
 class Settings(BaseSettings):
+    # App Config
+    APP_ENV: str = "development"
+    DEBUG: bool = True
     FRONTEND_ORIGIN: str = "http://localhost:3000"
 
-    OPENAI_API_KEY: str = "change-me"
+    # Database & Cache
+    DATABASE_URL: str = "postgresql+psycopg://postgres:postgres@db:5432/ai_scrum_master"
+    REDIS_URL: str = "redis://redis:6379/0"
 
+    # JWT Configuration  
+    JWT_SECRET: str = "change-me"
+    JWT_ALG: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MIN: int = 30
+    REFRESH_TOKEN_EXPIRE_DAYS: int = 7
+
+    # OpenAI Configuration
+    OPENAI_API_KEY: str = "change-me"
+    OPENAI_MODEL: str = "gpt-4o-mini"
+    OPENAI_MAX_TOKENS: int = 2000
+    OPENAI_TEMPERATURE: float = 0.4
+
+    # Jira OAuth (PKCE)
     OAUTH_CLIENT_ID: str = "change-me"
     OAUTH_CLIENT_SECRET: str = "change-me"
     OAUTH_REDIRECT_URI: str = "http://localhost:8000/auth/callback"
@@ -13,13 +31,14 @@ class Settings(BaseSettings):
     OAUTH_TOKEN_URL: str = "https://auth.atlassian.com/oauth/token"
     OAUTH_AUDIENCE: str = "api.atlassian.com"
 
+    # Webhook Configuration
     WEBHOOK_SHARED_SECRET: str = "change-me"
 
-    DATABASE_URL: str = "sqlite:///./app.db"  # can switch to Postgres in docker-compose
-    REDIS_URL: str = "redis://redis:6379/0"
-
-    JWT_SECRET: str = "change-me"
-    ENV: str = "dev"
+    # Slack/GitHub placeholders
+    SLACK_CLIENT_ID: str = ""
+    SLACK_CLIENT_SECRET: str = ""
+    GITHUB_APP_ID: str = ""
+    GITHUB_APP_PRIVATE_KEY_BASE64: str = ""
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
