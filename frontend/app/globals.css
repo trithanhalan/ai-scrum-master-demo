@@ -1,7 +1,3 @@
-<file>
-      <absolute_file_name>/app/frontend/app/globals.css</absolute_file_name>
-      <content">@tailwind base;
+@tailwind base;
 @tailwind components;
 @tailwind utilities;
-</content>
-    </file>
