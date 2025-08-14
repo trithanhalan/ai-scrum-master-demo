@@ -1,6 +1,4 @@
-<file>
-      <absolute_file_name>/app/backend/app/telemetry/metrics.py</absolute_file_name>
-      <content">from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
+from prometheus_client import Counter, Histogram, generate_latest, CONTENT_TYPE_LATEST
 from fastapi import Response
 from fastapi.routing import APIRoute
 from typing import Callable
@@ -101,5 +99,3 @@ def record_ai_request(model: str, function: str):
 def record_jira_api_call(endpoint: str, status: str):
     """Record Jira API call metric"""
     JIRA_API_CALLS.labels(endpoint=endpoint, status=status).inc()
-</content>
-    </file>
