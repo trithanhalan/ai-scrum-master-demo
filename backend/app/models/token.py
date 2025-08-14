@@ -1,6 +1,6 @@
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING
-from sqlalchemy import String, DateTime, JSON, Integer, Text
+from sqlalchemy import String, DateTime, JSON, Integer, Text, ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.db.base import Base
 
@@ -11,7 +11,7 @@ class OAuthToken(Base):
     __tablename__ = "oauth_tokens"
     
     id: Mapped[int] = mapped_column(Integer, primary_key=True, index=True)
-    tenant_id: Mapped[int] = mapped_column(Integer, nullable=False, index=True)
+    tenant_id: Mapped[int] = mapped_column(Integer, ForeignKey("tenants.id"), nullable=False, index=True)
     account_id: Mapped[str] = mapped_column(String(255), index=True)  # Jira account ID
     cloud_id: Mapped[str] = mapped_column(String(255), index=True)    # Jira cloud ID
     provider: Mapped[str] = mapped_column(String(50), default="jira")  # jira, slack, github
