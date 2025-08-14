@@ -1,4 +1,8 @@
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from dotenv import load_dotenv
+
+# 👇 This line loads environment variables from the .env file at runtime
+load_dotenv()
 
 class Settings(BaseSettings):
     # App Config
@@ -7,7 +11,7 @@ class Settings(BaseSettings):
     FRONTEND_ORIGIN: str = "http://localhost:3000"
 
     # Database & Cache
-    DATABASE_URL: str = "sqlite:///./app.db"  # Default to SQLite for local dev
+    DATABASE_URL: str = "sqlite:///./app.db"
     REDIS_URL: str = "redis://redis:6379/0"
 
     # JWT Configuration  
@@ -42,4 +46,5 @@ class Settings(BaseSettings):
 
     model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
 
+# ✅ Make sure to call Settings directly without comma
 settings = Settings()

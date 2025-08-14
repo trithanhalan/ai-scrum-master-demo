@@ -8,31 +8,34 @@ from app.routes.insights import router as insights_router
 from app.routes.summarize import router as summarize_router
 from app.telemetry.metrics import get_metrics, MetricsMiddleware
 from app.logging_config import logger
+import os
 
-# Import all models to ensure they're registered with SQLAlchemy
-from app.models import *
+from app.models import *  # Ensures all models are registered
 
-# Create tables (in production, use Alembic migrations instead)
 if settings.DEBUG:
     create_tables()
 
+# ✅ App initialization (KEEP ONLY THIS ONE)
 app = FastAPI(
     title="AI Scrum Master – Jira", 
     version="0.1.0",
     description="Intelligent Agile Automation Platform with Jira, Slack, and GitHub integrations"
 )
 
-# Add metrics middleware
+# ✅ Middleware: Metrics
 app.add_middleware(MetricsMiddleware)
 
+# ✅ Middleware: CORS
+frontend_origin = os.getenv("FRONTEND_URL", "http://localhost:3000")
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[settings.FRONTEND_ORIGIN],
+    allow_origins=[frontend_origin],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# ✅ Health Endpoints
 @app.get("/")
 def root():
     logger.info("Root endpoint accessed")
@@ -48,10 +51,9 @@ def version():
 
 @app.get("/metrics")
 def metrics():
-    """Prometheus metrics endpoint"""
     return get_metrics()
 
-# Include routers
+# ✅ Include Routers
 app.include_router(auth_router)
 app.include_router(webhooks_router)
 app.include_router(insights_router)
