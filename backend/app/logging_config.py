@@ -1,6 +1,4 @@
-<file>
-      <absolute_file_name>/app/backend/app/logging_config.py</absolute_file_name>
-      <content">import structlog
+import structlog
 import logging
 import sys
 from app.config import settings
@@ -37,5 +35,3 @@ configure_logging()
 
 # Export logger for use in other modules
 logger = structlog.get_logger()
-</content>
-    </file>
