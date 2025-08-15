@@ -234,6 +234,32 @@ export default function Home() {
           </button>
         </div>
 
+        {/* Jira Data Helpers */}
+        {connection.authenticated && (
+          <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
+            <h2 className="text-2xl font-bold mb-4 text-center">📋 Jira Data Helpers</h2>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <button
+                onClick={() => callAPI('/auth/jira/boards')}
+                disabled={loading}
+                className="bg-blue-500 hover:bg-blue-600 text-white font-semibold py-4 px-6 rounded-lg disabled:opacity-50 shadow-md"
+              >
+                📋 Get Jira Boards
+                <div className="text-xs mt-1 opacity-75">List all accessible boards</div>
+              </button>
+              
+              <button
+                onClick={() => callAPI('/auth/jira/projects')}
+                disabled={loading}
+                className="bg-cyan-500 hover:bg-cyan-600 text-white font-semibold py-4 px-6 rounded-lg disabled:opacity-50 shadow-md"
+              >
+                🏗️ Get Jira Projects
+                <div className="text-xs mt-1 opacity-75">List all accessible projects</div>
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* AI-Powered Features */}
         <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
           <h2 className="text-2xl font-bold mb-4 text-center">🧠 AI-Powered Features</h2>
