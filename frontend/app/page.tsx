@@ -97,7 +97,7 @@ export default function Home() {
   const startJiraAuth = async () => {
     setLoading(true)
     try {
-      const response = await fetch(`${API_URL}/auth/jira/login`)
+      const response = await makeAPICall('/auth/jira/login')
       const data = await response.json()
       // Redirect to Jira OAuth
       if (data.authorization_url) {
