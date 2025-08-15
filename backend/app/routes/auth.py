@@ -8,7 +8,7 @@ from sqlalchemy.orm import Session
 from app.db.session import get_db
 from app.models.token import Connection
 from app.services.auth_service import auth_service
-from app.services.jira_client import jira_client
+from app.services.jira_client import jira_client, get_jira_boards, get_jira_projects
 from app.config import settings
 from app.logging_config import logger
 
