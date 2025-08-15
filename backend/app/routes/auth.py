@@ -284,3 +284,125 @@ async def logout(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
             detail="Logout failed"
         )
+
+@router.get("/jira/boards")
+async def get_boards(
+    db: Session = Depends(get_db),
+    asm_conn: Optional[str] = Cookie(default=None)
+):
+    """Get Jira boards for the authenticated user"""
+    try:
+        connection = None
+        
+        # Try to get connection from cookie
+        if asm_conn:
+            try:
+                connection_id = int(asm_conn)
+                connection = auth_service.get_connection_by_id(db, connection_id)
+            except (ValueError, TypeError):
+                logger.warning("Invalid connection cookie", cookie_value=asm_conn)
+        
+        # Fallback to most recent active connection
+        if not connection:
+            connection = auth_service.get_latest_active_connection(db)
+        
+        if not connection:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="No active connection found. Please authenticate with Jira first."
+            )
+        
+        # Refresh tokens if needed
+        try:
+            connection = await auth_service.refresh_connection_if_needed(db, connection)
+        except Exception as e:
+            logger.error("Failed to refresh connection for boards", error=str(e))
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Connection expired and refresh failed. Please re-authenticate."
+            )
+        
+        # Get boards from Jira
+        boards_data = await get_jira_boards(connection)
+        
+        logger.info("Successfully fetched Jira boards", 
+                   account_id=connection.account_id,
+                   boards_count=len(boards_data.get("values", [])))
+        
+        return {
+            "success": True,
+            "boards": boards_data.get("values", []),
+            "total": boards_data.get("total", 0),
+            "account_id": connection.account_id,
+            "cloud_id": connection.cloud_id
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Get boards failed", error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch boards: {str(e)}"
+        )
+
+@router.get("/jira/projects")
+async def get_projects(
+    db: Session = Depends(get_db),
+    asm_conn: Optional[str] = Cookie(default=None)
+):
+    """Get Jira projects for the authenticated user"""
+    try:
+        connection = None
+        
+        # Try to get connection from cookie
+        if asm_conn:
+            try:
+                connection_id = int(asm_conn)
+                connection = auth_service.get_connection_by_id(db, connection_id)
+            except (ValueError, TypeError):
+                logger.warning("Invalid connection cookie", cookie_value=asm_conn)
+        
+        # Fallback to most recent active connection
+        if not connection:
+            connection = auth_service.get_latest_active_connection(db)
+        
+        if not connection:
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="No active connection found. Please authenticate with Jira first."
+            )
+        
+        # Refresh tokens if needed
+        try:
+            connection = await auth_service.refresh_connection_if_needed(db, connection)
+        except Exception as e:
+            logger.error("Failed to refresh connection for projects", error=str(e))
+            raise HTTPException(
+                status_code=status.HTTP_401_UNAUTHORIZED,
+                detail="Connection expired and refresh failed. Please re-authenticate."
+            )
+        
+        # Get projects from Jira
+        projects_data = await get_jira_projects(connection)
+        
+        logger.info("Successfully fetched Jira projects", 
+                   account_id=connection.account_id,
+                   projects_count=len(projects_data) if isinstance(projects_data, list) else 0)
+        
+        return {
+            "success": True,
+            "projects": projects_data,
+            "total": len(projects_data) if isinstance(projects_data, list) else 0,
+            "account_id": connection.account_id,
+            "cloud_id": connection.cloud_id
+        }
+        
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.error("Get projects failed", error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail=f"Failed to fetch projects: {str(e)}"
+        )
