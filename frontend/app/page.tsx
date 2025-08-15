@@ -114,10 +114,7 @@ export default function Home() {
   const logout = async () => {
     setLoading(true)
     try {
-      await fetch(`${API_URL}/auth/logout`, { 
-        method: 'POST',
-        credentials: 'include'
-      })
+      await makeAPICall('/auth/logout', { method: 'POST' })
       setConnection({ authenticated: false })
       localStorage.removeItem('jira_connection')
       setResult('Successfully logged out')
