@@ -247,3 +247,10 @@ async def get_jira_sprints(connection, board_id: str) -> Dict:
         return await jira_client.get_sprints(connection, board_id)
     except Exception as e:
         return {"values": [], "error": str(e)}
+
+async def get_jira_projects(connection) -> Dict:
+    """Get Jira projects for the connected user"""
+    try:
+        return await jira_client.get_projects(connection)
+    except Exception as e:
+        return {"values": [], "error": str(e)}
