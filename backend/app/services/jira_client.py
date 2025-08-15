@@ -4,8 +4,7 @@ from datetime import datetime, timezone, timedelta
 from typing import Dict, Optional, List
 from sqlalchemy.orm import Session
 from app.config import settings
-from app.models.token import OAuthToken
-from app.models.tenant import Tenant
+from app.telemetry.metrics import record_jira_api_call
 
 class JiraOAuthClient:
     """Async Jira client with OAuth 2.0 PKCE support"""
@@ -84,65 +83,40 @@ class JiraOAuthClient:
             response.raise_for_status()
             return response.json()
     
-    async def search_issues(self, token: OAuthToken, jql: str, max_results: int = 50) -> Dict:
-        """Search Jira issues using JQL"""
-        if token.is_expired():
-            raise Exception("Token is expired")
+    async def search_issues(self, connection, jql: str, max_results: int = 50) -> Dict:
+        """Search Jira issues using JQL with Connection object"""
+        if connection.is_expired():
+            raise Exception("Connection is expired")
         
-        async with httpx.AsyncClient() as client:
-            url = f"https://api.atlassian.com/ex/jira/{token.cloud_id}/rest/api/3/search"
-            params = {
-                "jql": jql,
-                "maxResults": max_results,
-                "fields": "summary,status,assignee,created,updated,issuetype"
-            }
-            
-            response = await client.get(
-                url,
-                params=params,
-                headers={"Authorization": f"Bearer {token.access_token}"}
-            )
-            response.raise_for_status()
-            return response.json()
+        try:
+            async with httpx.AsyncClient() as client:
+                url = f"https://api.atlassian.com/ex/jira/{connection.cloud_id}/rest/api/3/search"
+                params = {
+                    "jql": jql,
+                    "maxResults": max_results,
+                    "fields": "summary,status,assignee,created,updated,issuetype"
+                }
+                
+                response = await client.get(
+                    url,
+                    params=params,
+                    headers={"Authorization": f"Bearer {connection.access_token}"}
+                )
+                response.raise_for_status()
+                record_jira_api_call("search", "success")
+                return response.json()
+                
+        except Exception as e:
+            record_jira_api_call("search", "error")
+            raise Exception(f"Jira API call failed: {str(e)}")
 
 # Global instance
 jira_client = JiraOAuthClient()
 
-async def refresh_if_needed(db: Session, token: OAuthToken) -> OAuthToken:
-    """Refresh token if needed and update in database"""
-    if not token.is_expired():
-        return token
-    
-    if not token.refresh_token:
-        raise Exception("Token expired and no refresh token available")
-    
+async def jira_search_issues(connection, jql: str) -> Dict:
+    """Search Jira issues with the given JQL using Connection object"""
     try:
-        # Refresh the token
-        token_data = await jira_client.refresh_access_token(token.refresh_token)
-        
-        # Update token in database
-        token.access_token = token_data["access_token"]
-        if "refresh_token" in token_data:
-            token.refresh_token = token_data["refresh_token"]
-        
-        # Calculate expiry time
-        expires_in = token_data.get("expires_in", 3600)
-        token.expires_at = datetime.now(timezone.utc) + timedelta(seconds=expires_in)
-        token.updated_at = datetime.now(timezone.utc)
-        
-        db.commit()
-        db.refresh(token)
-        
-        return token
-        
+        return await jira_client.search_issues(connection, jql)
     except Exception as e:
-        db.rollback()
-        raise Exception(f"Failed to refresh token: {str(e)}")
-
-async def jira_search_issues(token: OAuthToken, jql: str) -> Dict:
-    """Search Jira issues with the given JQL"""
-    try:
-        return await jira_client.search_issues(token, jql)
-    except Exception as e:
-        # Return empty result if API call fails
+        # Return empty result with error info if API call fails
         return {"issues": [], "error": str(e)}
