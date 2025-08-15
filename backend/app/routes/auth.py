@@ -53,6 +53,12 @@ async def start_jira_auth(db: Session = Depends(get_db)):
             "state": state
         }
         
+    except ValueError as e:
+        logger.error("OAuth configuration error", error=str(e))
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
+            detail="OAuth is not properly configured. Please check your environment variables."
+        )
     except Exception as e:
         logger.error("Failed to start Jira OAuth", error=str(e))
         raise HTTPException(
@@ -83,7 +89,7 @@ async def oauth_callback(
         # Exchange code for tokens
         token_data = await jira_client.exchange_code_for_token(code, code_verifier)
         
-        # Get accessible resources (Jira sites)
+        # Get accessible resources first
         resources = await jira_client.get_accessible_resources(token_data["access_token"])
         
         if not resources:
@@ -96,6 +102,7 @@ async def oauth_callback(
         resource = resources[0]
         cloud_id = resource["id"]
         site_name = resource["name"]
+        account_id = token_data.get("account_id", "unknown")
         
         # Get or create tenant
         tenant = db.query(Tenant).filter_by(domain=site_name).first()
@@ -129,7 +136,7 @@ async def oauth_callback(
             # Create new token
             token = OAuthToken(
                 tenant_id=tenant.id,
-                account_id=token_data.get("account_id", "unknown"),
+                account_id=account_id,
                 cloud_id=cloud_id,
                 provider="jira",
                 access_token=token_data["access_token"],
@@ -187,6 +194,32 @@ async def auth_status(cloud_id: str = None, db: Session = Depends(get_db)):
     except Exception as e:
         logger.error("Auth status check failed", error=str(e))
         return {"authenticated": False, "message": str(e)}
+
+@router.get("/me")
+async def get_current_user(cloud_id: str, db: Session = Depends(get_db)):
+    """Get current user info"""
+    try:
+        token = db.query(OAuthToken).filter_by(
+            cloud_id=cloud_id,
+            provider="jira"
+        ).first()
+        
+        if not token:
+            raise HTTPException(404, "No token found")
+            
+        token = await refresh_if_needed(db, token)
+        user_info = await jira_client.get_user_info(token.access_token)
+        
+        return {
+            "account_id": user_info.get("account_id"),
+            "email": user_info.get("email"),
+            "name": user_info.get("name"),
+            "picture": user_info.get("picture")
+        }
+        
+    except Exception as e:
+        logger.error("Failed to get user info", error=str(e))
+        raise HTTPException(500, f"Failed to get user info: {str(e)}")
 
 @router.post("/logout")
 async def logout(cloud_id: str, db: Session = Depends(get_db)):

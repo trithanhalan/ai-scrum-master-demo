@@ -9,18 +9,18 @@ from app.logging_config import logger
 
 router = APIRouter(prefix="/summarize", tags=["summarize"])
 
-def _get_token(db: Session, account_id: str) -> OAuthToken:
-    """Get OAuth token for account"""
-    tk = db.query(OAuthToken).filter_by(account_id=account_id).order_by(OAuthToken.id.desc()).first()
+def _get_token(db: Session, cloud_id: str) -> OAuthToken:
+    """Get OAuth token for cloud instance"""
+    tk = db.query(OAuthToken).filter_by(cloud_id=cloud_id).first()
     if not tk:
-        raise HTTPException(404, "No token for account")
+        raise HTTPException(404, "No token found for Jira instance")
     return tk
 
 @router.get("/standup")
-async def summarize_standup(accountId: str, db: Session = Depends(get_db)):
+async def summarize_standup(cloudId: str, db: Session = Depends(get_db)):
     """Generate AI-powered standup summary from recent Jira activity"""
     try:
-        tk = _get_token(db, accountId)
+        tk = _get_token(db, cloudId)
         tk = await async_refresh_if_needed(db, tk)
         
         # Search for issues updated in the last 24 hours
@@ -53,7 +53,7 @@ async def summarize_standup(accountId: str, db: Session = Depends(get_db)):
         ai_summary = openai_service.summarize_standup(issues_text)
         
         logger.info("Generated standup summary", 
-                   account_id=accountId, 
+                   cloud_id=cloudId, 
                    issue_count=len(issues))
         
         return {
@@ -65,14 +65,14 @@ async def summarize_standup(accountId: str, db: Session = Depends(get_db)):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Standup summary failed", error=str(e), account_id=accountId)
+        logger.error("Standup summary failed", error=str(e), cloud_id=cloudId)
         raise HTTPException(500, f"Failed to generate standup summary: {str(e)}")
 
 @router.get("/blockers")
-async def summarize_blockers(accountId: str, db: Session = Depends(get_db)):
+async def summarize_blockers(cloudId: str, db: Session = Depends(get_db)):
     """Identify and summarize potential blockers from Jira issues"""
     try:
-        tk = _get_token(db, accountId)
+        tk = _get_token(db, cloudId)
         tk = await async_refresh_if_needed(db, tk)
         
         # Search for potentially blocked issues
@@ -107,7 +107,7 @@ async def summarize_blockers(accountId: str, db: Session = Depends(get_db)):
         ai_analysis = openai_service.identify_blockers(issues_text)
         
         logger.info("Generated blocker analysis", 
-                   account_id=accountId, 
+                   cloud_id=cloudId, 
                    blocker_count=len(issues))
         
         return {
@@ -119,20 +119,20 @@ async def summarize_blockers(accountId: str, db: Session = Depends(get_db)):
     except HTTPException:
         raise
     except Exception as e:
-        logger.error("Blocker analysis failed", error=str(e), account_id=accountId)
+        logger.error("Blocker analysis failed", error=str(e), cloud_id=cloudId)
         raise HTTPException(500, f"Failed to analyze blockers: {str(e)}")
 
 @router.get("/retrospective")
 async def generate_retrospective(
     boardId: str,
     sprintId: str = None,
-    accountId: str = None,
+    cloudId: str = None,
     db: Session = Depends(get_db)
 ):
     """Generate AI-powered sprint retrospective"""
     try:
-        if accountId:
-            tk = _get_token(db, accountId)
+        if cloudId:
+            tk = _get_token(db, cloudId)
             tk = await async_refresh_if_needed(db, tk)
             
             # Search for sprint-related issues
@@ -197,7 +197,7 @@ Issue Details:
             "retrospective": ai_retrospective,
             "board_id": boardId,
             "sprint_id": sprintId,
-            "issue_count": len(issues) if accountId else 0
+            "issue_count": len(issues) if cloudId else 0
         }
         
     except HTTPException:

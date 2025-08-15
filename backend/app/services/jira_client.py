@@ -1,16 +1,18 @@
 import httpx
-import json
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Optional, List
 from sqlalchemy.orm import Session
 from app.config import settings
 from app.models.token import OAuthToken
-from app.models.tenant import Tenant
+from app.logging_config import logger
 
 class JiraOAuthClient:
     """Async Jira client with OAuth 2.0 PKCE support"""
     
     def __init__(self):
+        if not settings.is_oauth_configured:
+            raise ValueError("OAuth client ID and secret must be configured in environment variables")
+            
         self.client_id = settings.OAUTH_CLIENT_ID
         self.client_secret = settings.OAUTH_CLIENT_SECRET
         self.redirect_uri = settings.OAUTH_REDIRECT_URI
@@ -74,6 +76,16 @@ class JiraOAuthClient:
             response.raise_for_status()
             return response.json()
     
+    async def get_user_info(self, access_token: str) -> Dict:
+        """Get user info from access token"""
+        async with httpx.AsyncClient() as client:
+            response = await client.get(
+                "https://api.atlassian.com/me",
+                headers={"Authorization": f"Bearer {access_token}"}
+            )
+            response.raise_for_status()
+            return response.json()
+
     async def get_accessible_resources(self, access_token: str) -> List[Dict]:
         """Get list of Jira sites user has access to"""
         async with httpx.AsyncClient() as client:
@@ -94,7 +106,7 @@ class JiraOAuthClient:
             params = {
                 "jql": jql,
                 "maxResults": max_results,
-                "fields": "summary,status,assignee,created,updated,issuetype"
+                "fields": "summary,status,assignee,created,updated,issuetype,changelog"
             }
             
             response = await client.get(
@@ -104,6 +116,33 @@ class JiraOAuthClient:
             )
             response.raise_for_status()
             return response.json()
+
+    async def get_board_sprints(self, token: OAuthToken, board_id: str, state: Optional[str] = None) -> List[Dict]:
+        """Get sprints for a board"""
+        if token.is_expired():
+            raise Exception("Token is expired")
+        
+        async with httpx.AsyncClient() as client:
+            url = f"https://api.atlassian.com/ex/jira/{token.cloud_id}/rest/agile/1.0/board/{board_id}/sprint"
+            params = {"state": state} if state else {}
+            
+            response = await client.get(
+                url,
+                params=params,
+                headers={"Authorization": f"Bearer {token.access_token}"}
+            )
+            response.raise_for_status()
+            data = response.json()
+            return data.get("values", [])
+
+    async def get_sprint_issues(self, token: OAuthToken, sprint_id: str) -> List[Dict]:
+        """Get all issues in a sprint"""
+        if token.is_expired():
+            raise Exception("Token is expired")
+        
+        jql = f"sprint = {sprint_id} ORDER BY created DESC"
+        result = await self.search_issues(token, jql, max_results=100)
+        return result.get("issues", [])
 
 # Global instance
 jira_client = JiraOAuthClient()
@@ -144,5 +183,5 @@ async def jira_search_issues(token: OAuthToken, jql: str) -> Dict:
     try:
         return await jira_client.search_issues(token, jql)
     except Exception as e:
-        # Return empty result if API call fails
+        logger.error("Jira search failed", error=str(e))
         return {"issues": [], "error": str(e)}

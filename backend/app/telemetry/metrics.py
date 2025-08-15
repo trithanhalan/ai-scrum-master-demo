@@ -80,22 +80,28 @@ class MetricsMiddleware:
 
 def get_metrics() -> Response:
     """Endpoint to expose Prometheus metrics"""
-    metrics_data = generate_latest()
-    return Response(content=metrics_data, media_type=CONTENT_TYPE_LATEST)
+    try:
+        metrics_data = generate_latest()
+        return Response(
+            content=metrics_data.decode('utf-8'),
+            media_type=CONTENT_TYPE_LATEST
+        )
+    except Exception as e:
+        return {"error": str(e)}
 
 # Helper functions for recording metrics
 def record_webhook_event(source: str, event_type: str):
     """Record webhook event metric"""
     WEBHOOK_EVENTS.labels(source=source, event_type=event_type).inc()
 
-def record_worker_processed(status: str):
-    """Record worker processed event metric"""
+def record_worker_event(status: str):
+    """Record worker event metric"""
     WORKER_PROCESSED.labels(status=status).inc()
 
 def record_ai_request(model: str, function: str):
     """Record AI API request metric"""
     AI_REQUESTS.labels(model=model, function=function).inc()
 
-def record_jira_api_call(endpoint: str, status: str):
+def record_jira_api_call(endpoint: str, status: str = "success"):
     """Record Jira API call metric"""
     JIRA_API_CALLS.labels(endpoint=endpoint, status=status).inc()

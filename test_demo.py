@@ -6,8 +6,11 @@ Demo test script to verify the AI Scrum Master MVP is working correctly.
 import requests
 import json
 from datetime import datetime, timezone
+from app.config import settings
 
 BASE_URL = "http://localhost:8000"
+TEST_CLOUD_ID = settings.jira_cloud_id or "test-cloud-id"
+TEST_BOARD_ID = settings.jira_board_id or "test-board-id"
 
 def test_health():
     """Test health endpoint"""
@@ -28,7 +31,7 @@ def test_version():
 def test_insights():
     """Test insights endpoint"""
     print("Testing insights endpoint...")
-    response = requests.get(f"{BASE_URL}/insights/sprint?boardId=demo&accountId=demo")
+    response = requests.get(f"{BASE_URL}/insights/sprint?boardId={TEST_BOARD_ID}&cloudId={TEST_CLOUD_ID}")
     assert response.status_code == 200
     data = response.json()
     expected_keys = ["completed", "remaining", "contributors", "scope_changes", "burndown"]
@@ -79,7 +82,7 @@ def main():
         print("Available endpoints:")
         print("- Backend API: http://localhost:8000/docs")
         print("- Health: http://localhost:8000/healthz")
-        print("- Sprint Insights: http://localhost:8000/insights/sprint?boardId=demo&accountId=demo")
+        print(f"- Sprint Insights: http://localhost:8000/insights/sprint?boardId={TEST_BOARD_ID}&cloudId={TEST_CLOUD_ID}")
         print("- Auth Start: http://localhost:8000/auth/start")
         
     except Exception as e:

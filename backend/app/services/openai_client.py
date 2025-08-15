@@ -31,7 +31,7 @@ Keep it concise and focus on the most important updates. If no significant work 
             model=self.model,
             messages=[{"role": "user", "content": prompt}],
             temperature=self.temperature,
-            max_tokens=self.max_tokens
+            max_completion_tokens=self.max_tokens
         )
         
         return response.choices[0].message.content.strip()
@@ -57,7 +57,7 @@ Provide a summary of potential blockers and recommendations for the Scrum Master
             model=self.model,
             messages=[{"role": "user", "content": prompt}],
             temperature=self.temperature,
-            max_tokens=self.max_tokens
+            max_completion_tokens=self.max_tokens
         )
         
         return response.choices[0].message.content.strip()
@@ -83,7 +83,7 @@ Keep insights constructive and actionable.
             model=self.model,
             messages=[{"role": "user", "content": prompt}],
             temperature=self.temperature,
-            max_tokens=self.max_tokens
+            max_completion_tokens=self.max_tokens
         )
         
         return response.choices[0].message.content.strip()

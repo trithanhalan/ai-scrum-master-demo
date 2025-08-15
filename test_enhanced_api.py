@@ -7,8 +7,11 @@ Tests all new endpoints and features.
 import requests
 import json
 from datetime import datetime
+from app.config import settings
 
 BASE_URL = "http://localhost:8001"
+TEST_CLOUD_ID = settings.jira_cloud_id or "test-cloud-id"
+TEST_BOARD_ID = settings.jira_board_id or "test-board-id"
 
 def test_health_and_version():
     """Test basic health and version endpoints"""
@@ -73,15 +76,15 @@ def test_summarize_endpoints():
     print("🔍 Testing summarize endpoints...")
     
     # Standup summary (should fail with no token)
-    response = requests.get(f"{BASE_URL}/summarize/standup?accountId=demo")
+    response = requests.get(f"{BASE_URL}/summarize/standup?cloudId={TEST_CLOUD_ID}")
     assert response.status_code == 404
-    assert "No token for account" in response.json()["detail"]
+    assert "No token found for Jira instance" in response.json()["detail"]
     print("  ✅ Standup summary (no token) working")
     
     # Blockers analysis (should fail with no token)
-    response = requests.get(f"{BASE_URL}/summarize/blockers?accountId=demo")
+    response = requests.get(f"{BASE_URL}/summarize/blockers?cloudId={TEST_CLOUD_ID}")
     assert response.status_code == 404
-    assert "No token for account" in response.json()["detail"]
+    assert "No token found for Jira instance" in response.json()["detail"]
     print("  ✅ Blockers analysis (no token) working")
     
     # Retrospective (should work without accountId, but may fail with invalid API key)
@@ -102,7 +105,7 @@ def test_insights_endpoint():
     """Test insights endpoints"""
     print("🔍 Testing insights endpoints...")
     
-    response = requests.get(f"{BASE_URL}/insights/sprint?boardId=demo&accountId=demo")
+    response = requests.get(f"{BASE_URL}/insights/sprint?boardId={TEST_BOARD_ID}&cloudId={TEST_CLOUD_ID}")
     assert response.status_code == 200
     data = response.json()
     expected_keys = ["completed", "remaining", "contributors", "scope_changes", "burndown"]
