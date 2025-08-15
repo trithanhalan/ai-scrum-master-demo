@@ -14,8 +14,10 @@ services:
         condition: service_started
     volumes:
       - ./backend:/app
+      - dbdata:/data  # Mount volume for database persistence
     environment:
-      - DATABASE_URL=postgresql+psycopg://postgres:postgres@db:5432/ai_scrum_master
+      - DATABASE_URL=sqlite:////data/app.db  # Use mounted volume path
+      - REDIS_URL=redis://redis:6379/0
 
   frontend:
     build:
@@ -58,3 +60,4 @@ services:
 volumes:
   postgres_data:
   redis_data:
+  dbdata:  # Add volume for SQLite database persistence
