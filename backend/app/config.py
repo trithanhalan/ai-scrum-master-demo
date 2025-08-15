@@ -6,8 +6,8 @@ class Settings(BaseSettings):
     DEBUG: bool = True
     FRONTEND_ORIGIN: str = "http://localhost:3000"
 
-    # Database & Cache
-    DATABASE_URL: str = "sqlite:///./app.db"  # Default to SQLite for local dev
+    # Database & Cache - Use mounted volume path for persistence
+    DATABASE_URL: str = "sqlite:////data/app.db"  # Use mounted volume for persistence
     REDIS_URL: str = "redis://redis:6379/0"
 
     # JWT Configuration  
