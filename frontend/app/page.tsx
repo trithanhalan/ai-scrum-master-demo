@@ -15,15 +15,6 @@ interface Connection {
   message?: string
 }
 
-// Helper function to make API calls (removed /api prefix as backend doesn't use it)
-const makeAPICall = async (endpoint: string, options?: RequestInit) => {
-  const url = `${API_URL}${endpoint}`
-  return fetch(url, {
-    credentials: 'include',
-    ...options
-  })
-}
-
 export default function Home() {
   const [result, setResult] = useState<string>('')
   const [loading, setLoading] = useState(false)
@@ -33,7 +24,9 @@ export default function Home() {
   // Check connection status on component mount and after auth
   const checkConnection = async () => {
     try {
-      const response = await makeAPICall('/auth/connection')
+      const response = await fetch(`${API_URL}/auth/connection`, {
+        credentials: 'include'  // Include cookies
+      })
       const data = await response.json()
       setConnection(data)
       
@@ -65,7 +58,7 @@ export default function Home() {
     
     if (authResult === 'success' && cloudIdParam && accountIdParam) {
       setResult(`🎉 Jira authentication successful!\n\nAccount: ${accountIdParam}\nCloud: ${cloudIdParam}`)
-      // Clear URL parameters
+      // Clear URL parameters for clean UI
       window.history.replaceState({}, document.title, window.location.pathname)
       // Check connection to get full details
       setTimeout(checkConnection, 1000)
@@ -84,7 +77,9 @@ export default function Home() {
   const callAPI = async (endpoint: string) => {
     setLoading(true)
     try {
-      const response = await makeAPICall(endpoint)
+      const response = await fetch(`${API_URL}${endpoint}`, {
+        credentials: 'include'  // Include cookies for session
+      })
       const data = await response.json()
       setResult(JSON.stringify(data, null, 2))
     } catch (error) {
@@ -94,27 +89,18 @@ export default function Home() {
     }
   }
 
-  const startJiraAuth = async () => {
-    setLoading(true)
-    try {
-      const response = await makeAPICall('/auth/jira/login')
-      const data = await response.json()
-      // Redirect to Jira OAuth
-      if (data.authorization_url) {
-        window.location.href = data.authorization_url
-      } else {
-        throw new Error('No authorization URL received')
-      }
-    } catch (error) {
-      setResult(`OAuth Error: ${error}`)
-      setLoading(false)
-    }
+  const startJiraAuth = () => {
+    // Simple navigation to backend OAuth endpoint - let backend handle redirect
+    window.location.href = `${API_URL}/auth/jira/login`
   }
 
   const logout = async () => {
     setLoading(true)
     try {
-      await makeAPICall('/auth/logout', { method: 'POST' })
+      await fetch(`${API_URL}/auth/logout`, { 
+        method: 'POST',
+        credentials: 'include'
+      })
       setConnection({ authenticated: false })
       localStorage.removeItem('jira_connection')
       setResult('Successfully logged out')
@@ -132,7 +118,6 @@ export default function Home() {
     }
     
     // The backend will automatically use the session cookie to identify the user
-    // No need to manually add account/cloud parameters
     await callAPI(endpoint)
   }
 
@@ -236,7 +221,7 @@ export default function Home() {
           </button>
         </div>
 
-        {/* Jira Data Helpers */}
+        {/* Jira Data Helpers - Only show when connected */}
         {connection.authenticated && (
           <div className="bg-white rounded-lg shadow-lg p-6 mb-8">
             <h2 className="text-2xl font-bold mb-4 text-center">📋 Jira Data Helpers</h2>
