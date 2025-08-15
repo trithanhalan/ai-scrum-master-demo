@@ -195,6 +195,25 @@ class JiraOAuthClient:
             record_jira_api_call("get_sprints", "error")
             logger.error("Get sprints failed", error=str(e))
             raise Exception(f"Get sprints failed: {str(e)}")
+    
+    async def get_projects(self, connection) -> Dict:
+        """Get all projects accessible to the user"""
+        try:
+            async with httpx.AsyncClient() as client:
+                url = f"https://api.atlassian.com/ex/jira/{connection.cloud_id}/rest/api/3/project"
+                
+                response = await client.get(
+                    url,
+                    headers={"Authorization": f"Bearer {connection.access_token}"}
+                )
+                response.raise_for_status()
+                record_jira_api_call("get_projects", "success")
+                return response.json()
+                
+        except Exception as e:
+            record_jira_api_call("get_projects", "error")
+            logger.error("Get projects failed", error=str(e))
+            raise Exception(f"Get projects failed: {str(e)}")
 
 # Global instance
 jira_client = JiraOAuthClient()
