@@ -15,6 +15,15 @@ interface Connection {
   message?: string
 }
 
+// Helper function to make API calls with proper /api prefix
+const makeAPICall = async (endpoint: string, options?: RequestInit) => {
+  const url = `${API_URL}${endpoint.startsWith('/api') ? '' : '/api'}${endpoint}`
+  return fetch(url, {
+    credentials: 'include',
+    ...options
+  })
+}
+
 export default function Home() {
   const [result, setResult] = useState<string>('')
   const [loading, setLoading] = useState(false)
