@@ -1,50 +1,107 @@
+# app/config.py
+from __future__ import annotations
+
+from datetime import timedelta
+from typing import List, Optional
+
+from pydantic import Field
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+
 class Settings(BaseSettings):
-    # App Config
+    # --- Core / App ---
     APP_ENV: str = "development"
     DEBUG: bool = True
-    FRONTEND_ORIGIN: str = "http://localhost:3000"
+    LOG_LEVEL: str = "INFO"
 
-    # Database & Cache - Use mounted volume path for persistence
-    DATABASE_URL: str = "sqlite:////data/app.db"  # Use mounted volume for persistence
-    REDIS_URL: str = "redis://redis:6379/0"
+    # Swagger / CORS toggles
+    ENABLE_SWAGGER_UI: bool = True
+    ENABLE_CORS: bool = True
 
-    # JWT Configuration  
-    JWT_SECRET: str = "ai-scrum-master-jwt-secret-key"
-    JWT_ALG: str = "HS256"
-    ACCESS_TOKEN_EXPIRE_MIN: int = 30
+    # CORS
+    FRONTEND_URL: str = "http://localhost:3000"
+    FRONTEND_ORIGIN: Optional[str] = None
+
+    # --- Security / JWT ---
+    SECRET_KEY: str = "change-me"
+    ALGORITHM: str = "HS256"
+    ACCESS_TOKEN_EXPIRE_MINUTES: int = 30
     REFRESH_TOKEN_EXPIRE_DAYS: int = 7
 
-    # OpenAI Configuration
-    OPENAI_API_KEY: str = "change-me"
+    # --- Storage / Infra ---
+    DATABASE_URL: str = "sqlite:///./ai_scrum_master.db"
+    REDIS_URL: str = "redis://localhost:6379"
+
+    # --- Feature Flags ---
+    ENABLE_AI_FEATURES: bool = True
+    ENABLE_REAL_TIME_UPDATES: bool = True
+    ENABLE_WEBHOOKS: bool = True
+    ENABLE_OAUTH: bool = True
+
+    # --- OpenAI ---
+    OPENAI_API_KEY: Optional[str] = None
     OPENAI_MODEL: str = "gpt-4o-mini"
     OPENAI_MAX_TOKENS: int = 2000
-    OPENAI_TEMPERATURE: float = 0.4
+    OPENAI_TEMPERATURE: float = 0.7
 
-    # Jira OAuth (PKCE) - Using port 8001 for our backend
-    OAUTH_CLIENT_ID: str = "change-me"
-    OAUTH_CLIENT_SECRET: str = "change-me"
-    OAUTH_REDIRECT_URI: str = "http://localhost:8001/auth/callback"
-    OAUTH_SCOPES: str = "read:jira-user read:jira-work write:jira-work offline_access"
-    OAUTH_AUTHORIZE_URL: str = "https://auth.atlassian.com/authorize"
+    # --- Atlassian / Jira OAuth ---
+    OAUTH_CLIENT_ID: str
+    OAUTH_CLIENT_SECRET: str
+
+    # Map env REDIRECT_URI -> OAUTH_REDIRECT_URI
+    OAUTH_REDIRECT_URI: str = Field(
+        default="http://localhost:8000/auth/callback",
+        alias="REDIRECT_URI",
+    )
+
+    # Atlassian endpoints + audience + scopes
+    OAUTH_AUTH_URL: str = "https://auth.atlassian.com/authorize"
     OAUTH_TOKEN_URL: str = "https://auth.atlassian.com/oauth/token"
-    OAUTH_AUDIENCE: str = "api.atlassian.com"
+    OAUTH_AUDIENCE: str = "api.atlassian.com"          # <-- add this
+    OAUTH_SCOPES: str = "read:jira-user read:jira-work write:jira-work offline_access"
 
-    # Jira API Settings (for direct API calls)
-    JIRA_BASE_URL: str = "https://trithanhalan.atlassian.net"
-    JIRA_EMAIL: str = "trithanhalan@gmail.com"
-    JIRA_API_TOKEN: str = "change-me"
+    # --- Jira REST (optional legacy/basic usage) ---
+    JIRA_BASE_URL: Optional[str] = None
+    JIRA_EMAIL: Optional[str] = None
+    JIRA_API_TOKEN: Optional[str] = None
 
-    # Webhook Configuration
-    WEBHOOK_SHARED_SECRET: str = "change-me"
+    # --- Webhooks ---
+    WEBHOOK_SHARED_SECRET: Optional[str] = None
 
-    # Slack/GitHub placeholders
-    SLACK_CLIENT_ID: str = ""
-    SLACK_CLIENT_SECRET: str = ""
-    GITHUB_APP_ID: str = ""
-    GITHUB_APP_PRIVATE_KEY_BASE64: str = ""
+    model_config = SettingsConfigDict(
+        env_file=".env",
+        env_file_encoding="utf-8",
+        extra="ignore",
+        populate_by_name=True,
+    )
 
-    model_config = SettingsConfigDict(env_file=".env", env_file_encoding="utf-8")
+    # ------------ Convenience helpers ------------
+    @property
+    def access_token_expires(self) -> timedelta:
+        return timedelta(minutes=self.ACCESS_TOKEN_EXPIRE_MINUTES)
+
+    @property
+    def refresh_token_expires(self) -> timedelta:
+        return timedelta(days=self.REFRESH_TOKEN_EXPIRE_DAYS)
+
+    @property
+    def cors_allowed_origins(self) -> List[str]:
+        if not self.FRONTEND_URL:
+            return []
+        return [o.strip() for o in self.FRONTEND_URL.split(",") if o.strip()]
+
+    # --- Back-compat shims used by jira_client.py ---
+    @property
+    def OAUTH_AUTHORIZE_URL(self) -> str:
+        return self.OAUTH_AUTH_URL
+
+    @property
+    def OAUTH_ACCESS_TOKEN_URL(self) -> str:
+        return self.OAUTH_TOKEN_URL
+
+    @property
+    def frontend_origin(self) -> str:
+        return (self.FRONTEND_ORIGIN or self.FRONTEND_URL or "http://localhost:3000").rstrip("/")
+
 
 settings = Settings()
