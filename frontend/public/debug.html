@@ -14,8 +14,8 @@
             resultDiv.innerHTML = 'Testing...';
             
             try {
-                console.log('Testing API connection to:', 'http://127.0.0.1:8001/healthz');
-                const response = await fetch('http://127.0.0.1:8001/healthz', {
+                console.log('Testing API connection to:', 'http://127.0.0.1:8000/healthz');
+                const response = await fetch('http://127.0.0.1:8000/healthz', {
                     method: 'GET',
                     mode: 'cors',
                 });

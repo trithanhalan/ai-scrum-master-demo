@@ -31,11 +31,11 @@ class Settings(BaseSettings):
     OAUTH_AUTH_URL: str = "https://auth.atlassian.com/authorize"
     OAUTH_TOKEN_URL: str = "https://auth.atlassian.com/oauth/token"
     OAUTH_AUDIENCE: str = "api.atlassian.com"
-    OAUTH_SCOPES: str = "read:jira-user read:jira-work write:jira-work offline_access"
+    OAUTH_SCOPES: str = "read:me read:jira-user read:jira-work write:jira-work offline_access"
     
     # Map env REDIRECT_URI -> OAUTH_REDIRECT_URI (must match Atlassian app config)
     OAUTH_REDIRECT_URI: str = Field(
-        default="http://localhost:8001/auth/callback",
+        default="http://localhost:8000/auth/callback",
         alias="REDIRECT_URI",
     )
 

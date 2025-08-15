@@ -8,7 +8,7 @@ import requests
 import json
 from datetime import datetime
 
-BASE_URL = "http://localhost:8001"
+BASE_URL = "http://localhost:8000"
 
 def test_health_and_version():
     """Test basic health and version endpoints"""
@@ -166,14 +166,14 @@ def main():
         print("🎉 All enhanced API tests passed!")
         print()
         print("📋 Available endpoints:")
-        print("  • Backend API: http://localhost:8001/docs")
-        print("  • Metrics: http://localhost:8001/metrics")
-        print("  • Auth Status: http://localhost:8001/auth/status")
-        print("  • Start Jira OAuth: http://localhost:8001/auth/jira/login")
-        print("  • Standup Summary: http://localhost:8001/summarize/standup")
-        print("  • Blockers Analysis: http://localhost:8001/summarize/blockers")
-        print("  • Retrospective: http://localhost:8001/summarize/retrospective")
-        print("  • Sprint Insights: http://localhost:8001/insights/sprint")
+        print("  • Backend API: http://localhost:8000/docs")
+        print("  • Metrics: http://localhost:8000/metrics")
+        print("  • Auth Status: http://localhost:8000/auth/status")
+        print("  • Start Jira OAuth: http://localhost:8000/auth/jira/login")
+        print("  • Standup Summary: http://localhost:8000/summarize/standup")
+        print("  • Blockers Analysis: http://localhost:8000/summarize/blockers")
+        print("  • Retrospective: http://localhost:8000/summarize/retrospective")
+        print("  • Sprint Insights: http://localhost:8000/insights/sprint")
         
     except Exception as e:
         print(f"❌ Test failed: {e}")

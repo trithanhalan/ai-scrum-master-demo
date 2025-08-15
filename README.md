@@ -32,13 +32,13 @@ cp .env.example frontend/.env.local
 
 1. Go to [Atlassian Developer Console](https://developer.atlassian.com/console/myapps/)
 2. Create a new OAuth 2.0 (3LO) app
-3. Set redirect URI to: `http://localhost:8001/auth/callback`
+3. Set redirect URI to: `http://localhost:8000/auth/callback`
 4. Copy your credentials to `backend/.env`:
 
 ```env
 OAUTH_CLIENT_ID=your-atlassian-client-id
 OAUTH_CLIENT_SECRET=your-atlassian-client-secret
-REDIRECT_URI=http://localhost:8001/auth/callback
+REDIRECT_URI=http://localhost:8000/auth/callback
 ```
 
 ### 3. Backend Setup
@@ -50,7 +50,7 @@ source venv/bin/activate  # On Windows: venv\Scripts\activate
 pip install -r requirements.txt
 
 # Start backend
-python -m uvicorn app.main:app --host 0.0.0.0 --port 8001 --reload
+python -m uvicorn app.main:app --host 0.0.0.0 --port 8000 --reload
 ```
 
 ### 4. Frontend Setup
@@ -60,7 +60,7 @@ cd ../frontend
 yarn install
 
 # Update .env.local
-echo "NEXT_PUBLIC_API_URL=http://localhost:8001" > .env.local
+echo "NEXT_PUBLIC_API_URL=http://localhost:8000" > .env.local
 
 # Start frontend
 yarn dev
@@ -79,7 +79,7 @@ yarn dev
 ┌─────────────────┐    ┌─────────────────┐    ┌─────────────────┐
 │   Frontend      │    │    Backend      │    │   Integrations  │
 │   (Next.js)     │◄──►│   (FastAPI)     │◄──►│      (Jira)     │
-│   Port: 3000    │    │   Port: 8001    │    │   (Slack/GitHub)│
+│   Port: 3000    │    │   Port: 8000    │    │   (Slack/GitHub)│
 └─────────────────┘    └─────────────────┘    └─────────────────┘
          │                       │                       │
          │               ┌─────────────────┐            │
@@ -127,7 +127,7 @@ https://auth.atlassian.com/authorize?
   audience=api.atlassian.com&
   client_id=YOUR_CLIENT_ID&
   scope=read:jira-user read:jira-work write:jira-work offline_access&
-  redirect_uri=http://localhost:8001/auth/callback&
+  redirect_uri=http://localhost:8000/auth/callback&
   state=RANDOM_STATE&
   response_type=code&
   prompt=consent&
@@ -141,13 +141,13 @@ https://auth.atlassian.com/authorize?
 
 ```bash
 # Test health endpoint
-curl http://localhost:8001/healthz
+curl http://localhost:8000/healthz
 
 # Test OAuth URL generation
-curl http://localhost:8001/auth/jira/login?redirect=false
+curl http://localhost:8000/auth/jira/login?redirect=false
 
 # Test connection status
-curl -b cookies.txt http://localhost:8001/auth/connection
+curl -b cookies.txt http://localhost:8000/auth/connection
 ```
 
 ### Environment Variables
@@ -157,7 +157,7 @@ curl -b cookies.txt http://localhost:8001/auth/connection
 # Required
 OAUTH_CLIENT_ID=your-atlassian-client-id
 OAUTH_CLIENT_SECRET=your-atlassian-client-secret
-REDIRECT_URI=http://localhost:8001/auth/callback
+REDIRECT_URI=http://localhost:8000/auth/callback
 
 # Optional
 OPENAI_API_KEY=sk-your-openai-key
@@ -168,7 +168,7 @@ JIRA_API_TOKEN=your-jira-api-token
 
 #### Frontend (.env.local)
 ```env
-NEXT_PUBLIC_API_URL=http://localhost:8001
+NEXT_PUBLIC_API_URL=http://localhost:8000
 ```
 
 ## 📦 Docker Deployment
@@ -179,7 +179,7 @@ docker-compose up --build
 
 # Services will be available at:
 # Frontend: http://localhost:3000
-# Backend: http://localhost:8001
+# Backend: http://localhost:8000
 ```
 
 ## 🔍 Troubleshooting
@@ -187,11 +187,11 @@ docker-compose up --build
 ### Common Issues
 
 1. **"Incorrect request parameters" on Atlassian**
-   - Verify redirect URI matches exactly: `http://localhost:8001/auth/callback`
+   - Verify redirect URI matches exactly: `http://localhost:8000/auth/callback`
    - Check OAuth app configuration in Atlassian Developer Console
 
 2. **"Failed to fetch" errors**
-   - Ensure backend is running on port 8001
+   - Ensure backend is running on port 8000
    - Check CORS configuration
    - Verify NEXT_PUBLIC_API_URL in frontend
 
@@ -206,7 +206,7 @@ docker-compose up --build
 tail -f backend/logs/app.log
 
 # Check backend health
-curl http://localhost:8001/healthz
+curl http://localhost:8000/healthz
 ```
 
 ## 🤝 Contributing

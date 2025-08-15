@@ -12,7 +12,7 @@ from typing import Dict, Any, Optional
 from urllib.parse import urlparse, parse_qs
 
 # Configuration
-BASE_URL = "http://localhost:8001"
+BASE_URL = "http://localhost:8000"
 API_BASE = f"{BASE_URL}/api"
 
 class Colors:
