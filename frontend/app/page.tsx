@@ -15,9 +15,9 @@ interface Connection {
   message?: string
 }
 
-// Helper function to make API calls with proper /api prefix
+// Helper function to make API calls (removed /api prefix as backend doesn't use it)
 const makeAPICall = async (endpoint: string, options?: RequestInit) => {
-  const url = `${API_URL}${endpoint.startsWith('/api') ? '' : '/api'}${endpoint}`
+  const url = `${API_URL}${endpoint}`
   return fetch(url, {
     credentials: 'include',
     ...options
