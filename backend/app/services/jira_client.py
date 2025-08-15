@@ -3,6 +3,7 @@ import json
 import base64
 from datetime import datetime, timezone, timedelta
 from typing import Dict, Optional, List
+from urllib.parse import urlencode
 from sqlalchemy.orm import Session
 from app.config import settings
 from app.telemetry.metrics import record_jira_api_call
@@ -15,7 +16,7 @@ class JiraOAuthClient:
         self.client_id = settings.OAUTH_CLIENT_ID
         self.client_secret = settings.OAUTH_CLIENT_SECRET
         self.redirect_uri = settings.OAUTH_REDIRECT_URI
-        self.authorize_url = settings.OAUTH_AUTHORIZE_URL
+        self.authorize_url = settings.OAUTH_AUTH_URL
         self.token_url = settings.OAUTH_TOKEN_URL
         self.audience = settings.OAUTH_AUDIENCE
         self.scopes = settings.OAUTH_SCOPES
@@ -26,7 +27,7 @@ class JiraOAuthClient:
         self.jira_api_token = settings.JIRA_API_TOKEN
     
     async def get_authorization_url(self, state: str, code_challenge: str) -> str:
-        """Generate OAuth authorization URL with PKCE"""
+        """Generate OAuth authorization URL with PKCE using proper URL encoding"""
         params = {
             "audience": self.audience,
             "client_id": self.client_id,
@@ -39,7 +40,8 @@ class JiraOAuthClient:
             "code_challenge_method": "S256"
         }
         
-        query_string = "&".join([f"{k}={v}" for k, v in params.items()])
+        # Use urllib.parse.urlencode for proper encoding
+        query_string = urlencode(params)
         return f"{self.authorize_url}?{query_string}"
     
     async def exchange_code_for_token(self, code: str, code_verifier: str) -> Dict:
