@@ -33,9 +33,7 @@ export default function Home() {
   // Check connection status on component mount and after auth
   const checkConnection = async () => {
     try {
-      const response = await fetch(`${API_URL}/auth/connection`, {
-        credentials: 'include'  // Include cookies
-      })
+      const response = await makeAPICall('/auth/connection')
       const data = await response.json()
       setConnection(data)
       
