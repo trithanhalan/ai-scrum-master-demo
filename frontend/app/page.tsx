@@ -84,9 +84,7 @@ export default function Home() {
   const callAPI = async (endpoint: string) => {
     setLoading(true)
     try {
-      const response = await fetch(`${API_URL}${endpoint}`, {
-        credentials: 'include'  // Include cookies for session
-      })
+      const response = await makeAPICall(endpoint)
       const data = await response.json()
       setResult(JSON.stringify(data, null, 2))
     } catch (error) {
