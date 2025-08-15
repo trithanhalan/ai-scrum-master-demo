@@ -1,13 +1,13 @@
 import secrets
 import base64
 import hashlib
-from typing import Dict
-from fastapi import APIRouter, Depends, HTTPException, Request, status
+from typing import Dict, Optional
+from fastapi import APIRouter, Depends, HTTPException, Request, status, Cookie, Response
 from fastapi.responses import RedirectResponse
 from sqlalchemy.orm import Session
 from app.db.session import get_db
-from app.models.tenant import Tenant
-from app.models.token import OAuthToken
+from app.models.token import Connection
+from app.services.auth_service import auth_service
 from app.services.jira_client import jira_client
 from app.config import settings
 from app.logging_config import logger
@@ -65,9 +65,10 @@ async def oauth_callback(
     code: str,
     state: str,
     request: Request,
+    response: Response,
     db: Session = Depends(get_db)
 ):
-    """Handle OAuth callback from Jira"""
+    """Handle OAuth callback from Jira and persist identity"""
     try:
         # Validate state parameter
         if state not in oauth_states:
@@ -83,8 +84,14 @@ async def oauth_callback(
         # Exchange code for tokens
         token_data = await jira_client.exchange_code_for_token(code, code_verifier)
         
+        # Get user info from Atlassian
+        user_info = await auth_service.get_user_info(token_data["access_token"])
+        account_id = user_info["account_id"]
+        display_name = user_info.get("name")
+        email = user_info.get("email")
+        
         # Get accessible resources (Jira sites)
-        resources = await jira_client.get_accessible_resources(token_data["access_token"])
+        resources = await auth_service.get_accessible_resources(token_data["access_token"])
         
         if not resources:
             raise HTTPException(
@@ -92,96 +99,155 @@ async def oauth_callback(
                 detail="No accessible Jira sites found"
             )
         
-        # Use the first accessible resource
+        # Use the first accessible resource (or let user choose in future)
         resource = resources[0]
         cloud_id = resource["id"]
         site_name = resource["name"]
         
-        # Get or create tenant
-        tenant = db.query(Tenant).filter_by(domain=site_name).first()
-        if not tenant:
-            tenant = Tenant(name=site_name, domain=site_name)
-            db.add(tenant)
-            db.flush()
-        
         # Calculate expiry time
         from datetime import datetime, timezone, timedelta
-        expires_at = None
-        if "expires_in" in token_data:
-            expires_at = datetime.now(timezone.utc) + timedelta(seconds=token_data["expires_in"])
+        expires_at = datetime.now(timezone.utc) + timedelta(seconds=token_data.get("expires_in", 3600))
         
-        # Store or update OAuth token
-        existing_token = db.query(OAuthToken).filter_by(
+        # Persist connection identity
+        connection = auth_service.upsert_connection(
+            db,
+            account_id=account_id,
             cloud_id=cloud_id,
-            provider="jira"
-        ).first()
+            access_token=token_data["access_token"],
+            refresh_token=token_data["refresh_token"],
+            expires_at=expires_at,
+            display_name=display_name,
+            email=email,
+            scopes=token_data.get("scope"),
+            raw={
+                "token_data": token_data,
+                "user_info": user_info,
+                "resources": resources
+            }
+        )
         
-        if existing_token:
-            # Update existing token
-            existing_token.access_token = token_data["access_token"]
-            existing_token.refresh_token = token_data.get("refresh_token")
-            existing_token.expires_at = expires_at
-            existing_token.scope = token_data.get("scope")
-            existing_token.raw_response = token_data
-            existing_token.updated_at = datetime.now(timezone.utc)
-            token = existing_token
-        else:
-            # Create new token
-            token = OAuthToken(
-                tenant_id=tenant.id,
-                account_id=token_data.get("account_id", "unknown"),
-                cloud_id=cloud_id,
-                provider="jira",
-                access_token=token_data["access_token"],
-                refresh_token=token_data.get("refresh_token"),
-                expires_at=expires_at,
-                scope=token_data.get("scope"),
-                raw_response=token_data
-            )
-            db.add(token)
-        
-        db.commit()
+        # Set secure cookie to tie browser session to connection
+        response.set_cookie(
+            key="asm_conn",
+            value=str(connection.id),
+            httponly=True,
+            samesite="lax",
+            secure=False,  # Set to True in production with HTTPS
+            max_age=30 * 24 * 60 * 60  # 30 days
+        )
         
         # Clean up state
         del oauth_states[state]
         
         logger.info("OAuth flow completed successfully", 
-                   cloud_id=cloud_id, 
-                   tenant_id=tenant.id)
+                   connection_id=connection.id,
+                   account_id=account_id,
+                   cloud_id=cloud_id)
         
         # Redirect to frontend with success
-        frontend_url = f"{settings.FRONTEND_ORIGIN}?auth=success&cloud_id={cloud_id}"
+        frontend_url = f"{settings.FRONTEND_ORIGIN}?auth=success&cloud_id={cloud_id}&account_id={account_id}"
         return RedirectResponse(url=frontend_url)
         
     except Exception as e:
         logger.error("OAuth callback failed", error=str(e))
         # Redirect to frontend with error
-        frontend_url = f"{settings.FRONTEND_ORIGIN}?auth=error&message={str(e)}"
+        error_msg = str(e).replace("&", "%26").replace("=", "%3D")
+        frontend_url = f"{settings.FRONTEND_ORIGIN}?auth=error&message={error_msg}"
         return RedirectResponse(url=frontend_url)
 
-@router.get("/status")
-async def auth_status(cloud_id: str = None, db: Session = Depends(get_db)):
-    """Check authentication status for a cloud ID"""
+@router.get("/connection")
+async def get_current_connection(
+    db: Session = Depends(get_db),
+    asm_conn: Optional[str] = Cookie(default=None)
+):
+    """Get the current connection identity for the authenticated user"""
     try:
-        if not cloud_id:
-            return {"authenticated": False, "message": "No cloud_id provided"}
+        connection = None
         
-        token = db.query(OAuthToken).filter_by(
-            cloud_id=cloud_id,
-            provider="jira"
-        ).first()
+        # Try to get connection from cookie
+        if asm_conn:
+            try:
+                connection_id = int(asm_conn)
+                connection = auth_service.get_connection_by_id(db, connection_id)
+            except (ValueError, TypeError):
+                logger.warning("Invalid connection cookie", cookie_value=asm_conn)
         
-        if not token:
-            return {"authenticated": False, "message": "No token found"}
+        # Fallback to most recent active connection (MVP behavior)
+        if not connection:
+            connection = auth_service.get_latest_active_connection(db)
         
-        if token.is_expired():
-            return {"authenticated": False, "message": "Token expired"}
+        if not connection:
+            return {
+                "authenticated": False,
+                "message": "No active connection found. Please authenticate with Jira first."
+            }
+        
+        # Refresh tokens if needed
+        try:
+            connection = await auth_service.refresh_connection_if_needed(db, connection)
+        except Exception as e:
+            logger.error("Failed to refresh connection", error=str(e))
+            return {
+                "authenticated": False,
+                "message": "Connection expired and refresh failed. Please re-authenticate."
+            }
         
         return {
             "authenticated": True,
-            "cloud_id": token.cloud_id,
-            "account_id": token.account_id,
-            "expires_at": token.expires_at.isoformat() if token.expires_at else None
+            "connection_id": connection.id,
+            "account_id": connection.account_id,
+            "cloud_id": connection.cloud_id,
+            "display_name": connection.display_name,
+            "email": connection.email,
+            "expires_at": connection.expires_at.isoformat()
+        }
+        
+    except Exception as e:
+        logger.error("Connection check failed", error=str(e))
+        return {
+            "authenticated": False,
+            "message": f"Connection check failed: {str(e)}"
+        }
+
+@router.get("/status")
+async def auth_status(
+    db: Session = Depends(get_db),
+    cloud_id: Optional[str] = None,
+    account_id: Optional[str] = None,
+    asm_conn: Optional[str] = Cookie(default=None)
+):
+    """Check authentication status (legacy endpoint - use /auth/connection instead)"""
+    try:
+        connection = None
+        
+        # Try specific account/cloud lookup first
+        if account_id and cloud_id:
+            connection = auth_service.get_connection_by_account(db, account_id, cloud_id)
+        
+        # Try cookie lookup
+        elif asm_conn:
+            try:
+                connection_id = int(asm_conn)
+                connection = auth_service.get_connection_by_id(db, connection_id)
+            except (ValueError, TypeError):
+                pass
+        
+        # Fallback to latest connection
+        if not connection:
+            connection = auth_service.get_latest_active_connection(db)
+        
+        if not connection:
+            return {"authenticated": False, "message": "No active connection found"}
+        
+        if connection.is_expired():
+            return {"authenticated": False, "message": "Connection expired"}
+        
+        return {
+            "authenticated": True,
+            "connection_id": connection.id,
+            "account_id": connection.account_id,
+            "cloud_id": connection.cloud_id,
+            "expires_at": connection.expires_at.isoformat()
         }
         
     except Exception as e:
@@ -189,18 +255,26 @@ async def auth_status(cloud_id: str = None, db: Session = Depends(get_db)):
         return {"authenticated": False, "message": str(e)}
 
 @router.post("/logout")
-async def logout(cloud_id: str, db: Session = Depends(get_db)):
-    """Logout and revoke OAuth token"""
+async def logout(
+    response: Response,
+    db: Session = Depends(get_db),
+    asm_conn: Optional[str] = Cookie(default=None)
+):
+    """Logout and deactivate connection"""
     try:
-        token = db.query(OAuthToken).filter_by(
-            cloud_id=cloud_id,
-            provider="jira"
-        ).first()
+        if asm_conn:
+            try:
+                connection_id = int(asm_conn)
+                connection = auth_service.get_connection_by_id(db, connection_id)
+                if connection:
+                    connection.is_active = False
+                    db.commit()
+                    logger.info("Connection deactivated", connection_id=connection_id)
+            except (ValueError, TypeError):
+                pass
         
-        if token:
-            db.delete(token)
-            db.commit()
-            logger.info("Token revoked", cloud_id=cloud_id)
+        # Clear cookie
+        response.delete_cookie("asm_conn")
         
         return {"message": "Logged out successfully"}
         
