@@ -1,14 +1,301 @@
-INFO:     Started server process [1367]
+load_ssl_context verify=True cert=None trust_env=True http2=False
+load_verify_locations cafile='/root/.venv/lib/python3.11/site-packages/certifi/cacert.pem'
+2025-08-14 07:00:56,634 INFO sqlalchemy.engine.Engine BEGIN (implicit)
+BEGIN (implicit)
+2025-08-14 07:00:56,635 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("oauth_tokens")
+PRAGMA main.table_info("oauth_tokens")
+2025-08-14 07:00:56,635 INFO sqlalchemy.engine.Engine [raw sql] ()
+[raw sql] ()
+2025-08-14 07:00:56,635 INFO sqlalchemy.engine.Engine PRAGMA temp.table_info("oauth_tokens")
+PRAGMA temp.table_info("oauth_tokens")
+2025-08-14 07:00:56,635 INFO sqlalchemy.engine.Engine [raw sql] ()
+[raw sql] ()
+2025-08-14 07:00:56,636 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("processed_events")
+PRAGMA main.table_info("processed_events")
+2025-08-14 07:00:56,636 INFO sqlalchemy.engine.Engine [raw sql] ()
+[raw sql] ()
+2025-08-14 07:00:56,636 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("jira_issue_events")
+PRAGMA main.table_info("jira_issue_events")
+2025-08-14 07:00:56,636 INFO sqlalchemy.engine.Engine [raw sql] ()
+[raw sql] ()
+2025-08-14 07:00:56,636 INFO sqlalchemy.engine.Engine PRAGMA temp.table_info("jira_issue_events")
+PRAGMA temp.table_info("jira_issue_events")
+2025-08-14 07:00:56,636 INFO sqlalchemy.engine.Engine [raw sql] ()
+[raw sql] ()
+2025-08-14 07:00:56,637 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("tenants")
+PRAGMA main.table_info("tenants")
+2025-08-14 07:00:56,637 INFO sqlalchemy.engine.Engine [raw sql] ()
+[raw sql] ()
+2025-08-14 07:00:56,637 INFO sqlalchemy.engine.Engine PRAGMA temp.table_info("tenants")
+PRAGMA temp.table_info("tenants")
+2025-08-14 07:00:56,637 INFO sqlalchemy.engine.Engine [raw sql] ()
+[raw sql] ()
+2025-08-14 07:00:56,637 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("workspaces")
+PRAGMA main.table_info("workspaces")
+2025-08-14 07:00:56,637 INFO sqlalchemy.engine.Engine [raw sql] ()
+[raw sql] ()
+2025-08-14 07:00:56,637 INFO sqlalchemy.engine.Engine PRAGMA temp.table_info("workspaces")
+PRAGMA temp.table_info("workspaces")
+2025-08-14 07:00:56,637 INFO sqlalchemy.engine.Engine [raw sql] ()
+[raw sql] ()
+2025-08-14 07:00:56,637 INFO sqlalchemy.engine.Engine PRAGMA main.table_info("users")
+PRAGMA main.table_info("users")
+2025-08-14 07:00:56,638 INFO sqlalchemy.engine.Engine [raw sql] ()
+[raw sql] ()
+2025-08-14 07:00:56,638 INFO sqlalchemy.engine.Engine PRAGMA temp.table_info("users")
+PRAGMA temp.table_info("users")
+2025-08-14 07:00:56,638 INFO sqlalchemy.engine.Engine [raw sql] ()
+[raw sql] ()
+2025-08-14 07:00:56,639 INFO sqlalchemy.engine.Engine 
+CREATE TABLE oauth_tokens (
+	id INTEGER NOT NULL, 
+	tenant_id INTEGER NOT NULL, 
+	account_id VARCHAR(255) NOT NULL, 
+	cloud_id VARCHAR(255) NOT NULL, 
+	provider VARCHAR(50) NOT NULL, 
+	access_token TEXT NOT NULL, 
+	refresh_token TEXT, 
+	token_type VARCHAR(50) NOT NULL, 
+	expires_at DATETIME, 
+	scope VARCHAR(500), 
+	raw_response JSON NOT NULL, 
+	created_at DATETIME NOT NULL, 
+	updated_at DATETIME NOT NULL, 
+	PRIMARY KEY (id)
+)
+
+
+
+CREATE TABLE oauth_tokens (
+	id INTEGER NOT NULL, 
+	tenant_id INTEGER NOT NULL, 
+	account_id VARCHAR(255) NOT NULL, 
+	cloud_id VARCHAR(255) NOT NULL, 
+	provider VARCHAR(50) NOT NULL, 
+	access_token TEXT NOT NULL, 
+	refresh_token TEXT, 
+	token_type VARCHAR(50) NOT NULL, 
+	expires_at DATETIME, 
+	scope VARCHAR(500), 
+	raw_response JSON NOT NULL, 
+	created_at DATETIME NOT NULL, 
+	updated_at DATETIME NOT NULL, 
+	PRIMARY KEY (id)
+)
+
+
+2025-08-14 07:00:56,639 INFO sqlalchemy.engine.Engine [no key 0.00015s] ()
+[no key 0.00015s] ()
+2025-08-14 07:00:56,643 INFO sqlalchemy.engine.Engine CREATE INDEX ix_oauth_tokens_cloud_id ON oauth_tokens (cloud_id)
+CREATE INDEX ix_oauth_tokens_cloud_id ON oauth_tokens (cloud_id)
+2025-08-14 07:00:56,643 INFO sqlalchemy.engine.Engine [no key 0.00014s] ()
+[no key 0.00014s] ()
+2025-08-14 07:00:56,647 INFO sqlalchemy.engine.Engine CREATE INDEX ix_oauth_tokens_id ON oauth_tokens (id)
+CREATE INDEX ix_oauth_tokens_id ON oauth_tokens (id)
+2025-08-14 07:00:56,647 INFO sqlalchemy.engine.Engine [no key 0.00013s] ()
+[no key 0.00013s] ()
+2025-08-14 07:00:56,650 INFO sqlalchemy.engine.Engine CREATE INDEX ix_oauth_tokens_account_id ON oauth_tokens (account_id)
+CREATE INDEX ix_oauth_tokens_account_id ON oauth_tokens (account_id)
+2025-08-14 07:00:56,650 INFO sqlalchemy.engine.Engine [no key 0.00015s] ()
+[no key 0.00015s] ()
+2025-08-14 07:00:56,653 INFO sqlalchemy.engine.Engine CREATE INDEX ix_oauth_tokens_tenant_id ON oauth_tokens (tenant_id)
+CREATE INDEX ix_oauth_tokens_tenant_id ON oauth_tokens (tenant_id)
+2025-08-14 07:00:56,653 INFO sqlalchemy.engine.Engine [no key 0.00013s] ()
+[no key 0.00013s] ()
+2025-08-14 07:00:56,657 INFO sqlalchemy.engine.Engine 
+CREATE TABLE jira_issue_events (
+	id INTEGER NOT NULL, 
+	tenant_id INTEGER NOT NULL, 
+	issue_key VARCHAR(50) NOT NULL, 
+	issue_id VARCHAR(50) NOT NULL, 
+	cloud_id VARCHAR(255) NOT NULL, 
+	event_type VARCHAR(100) NOT NULL, 
+	user_account_id VARCHAR(255), 
+	issue_summary VARCHAR(500), 
+	issue_status VARCHAR(100), 
+	issue_type VARCHAR(100), 
+	assignee_account_id VARCHAR(255), 
+	raw_payload JSON NOT NULL, 
+	created_at DATETIME NOT NULL, 
+	PRIMARY KEY (id)
+)
+
+
+
+CREATE TABLE jira_issue_events (
+	id INTEGER NOT NULL, 
+	tenant_id INTEGER NOT NULL, 
+	issue_key VARCHAR(50) NOT NULL, 
+	issue_id VARCHAR(50) NOT NULL, 
+	cloud_id VARCHAR(255) NOT NULL, 
+	event_type VARCHAR(100) NOT NULL, 
+	user_account_id VARCHAR(255), 
+	issue_summary VARCHAR(500), 
+	issue_status VARCHAR(100), 
+	issue_type VARCHAR(100), 
+	assignee_account_id VARCHAR(255), 
+	raw_payload JSON NOT NULL, 
+	created_at DATETIME NOT NULL, 
+	PRIMARY KEY (id)
+)
+
+
+2025-08-14 07:00:56,657 INFO sqlalchemy.engine.Engine [no key 0.00014s] ()
+[no key 0.00014s] ()
+2025-08-14 07:00:56,661 INFO sqlalchemy.engine.Engine CREATE INDEX ix_jira_issue_events_event_type ON jira_issue_events (event_type)
+CREATE INDEX ix_jira_issue_events_event_type ON jira_issue_events (event_type)
+2025-08-14 07:00:56,661 INFO sqlalchemy.engine.Engine [no key 0.00014s] ()
+[no key 0.00014s] ()
+2025-08-14 07:00:56,665 INFO sqlalchemy.engine.Engine CREATE INDEX ix_jira_events_tenant_issue ON jira_issue_events (tenant_id, issue_key)
+CREATE INDEX ix_jira_events_tenant_issue ON jira_issue_events (tenant_id, issue_key)
+2025-08-14 07:00:56,665 INFO sqlalchemy.engine.Engine [no key 0.00014s] ()
+[no key 0.00014s] ()
+2025-08-14 07:00:56,668 INFO sqlalchemy.engine.Engine CREATE INDEX ix_jira_issue_events_issue_id ON jira_issue_events (issue_id)
+CREATE INDEX ix_jira_issue_events_issue_id ON jira_issue_events (issue_id)
+2025-08-14 07:00:56,668 INFO sqlalchemy.engine.Engine [no key 0.00012s] ()
+[no key 0.00012s] ()
+2025-08-14 07:00:56,671 INFO sqlalchemy.engine.Engine CREATE INDEX ix_jira_events_created_at ON jira_issue_events (created_at)
+CREATE INDEX ix_jira_events_created_at ON jira_issue_events (created_at)
+2025-08-14 07:00:56,671 INFO sqlalchemy.engine.Engine [no key 0.00015s] ()
+[no key 0.00015s] ()
+2025-08-14 07:00:56,674 INFO sqlalchemy.engine.Engine CREATE INDEX ix_jira_issue_events_tenant_id ON jira_issue_events (tenant_id)
+CREATE INDEX ix_jira_issue_events_tenant_id ON jira_issue_events (tenant_id)
+2025-08-14 07:00:56,674 INFO sqlalchemy.engine.Engine [no key 0.00013s] ()
+[no key 0.00013s] ()
+2025-08-14 07:00:56,677 INFO sqlalchemy.engine.Engine CREATE INDEX ix_jira_issue_events_id ON jira_issue_events (id)
+CREATE INDEX ix_jira_issue_events_id ON jira_issue_events (id)
+2025-08-14 07:00:56,678 INFO sqlalchemy.engine.Engine [no key 0.00013s] ()
+[no key 0.00013s] ()
+2025-08-14 07:00:56,715 INFO sqlalchemy.engine.Engine CREATE INDEX ix_jira_issue_events_issue_key ON jira_issue_events (issue_key)
+CREATE INDEX ix_jira_issue_events_issue_key ON jira_issue_events (issue_key)
+2025-08-14 07:00:56,715 INFO sqlalchemy.engine.Engine [no key 0.00017s] ()
+[no key 0.00017s] ()
+2025-08-14 07:00:56,719 INFO sqlalchemy.engine.Engine CREATE INDEX ix_jira_issue_events_user_account_id ON jira_issue_events (user_account_id)
+CREATE INDEX ix_jira_issue_events_user_account_id ON jira_issue_events (user_account_id)
+2025-08-14 07:00:56,719 INFO sqlalchemy.engine.Engine [no key 0.00015s] ()
+[no key 0.00015s] ()
+2025-08-14 07:00:56,722 INFO sqlalchemy.engine.Engine CREATE INDEX ix_jira_issue_events_cloud_id ON jira_issue_events (cloud_id)
+CREATE INDEX ix_jira_issue_events_cloud_id ON jira_issue_events (cloud_id)
+2025-08-14 07:00:56,722 INFO sqlalchemy.engine.Engine [no key 0.00015s] ()
+[no key 0.00015s] ()
+2025-08-14 07:00:56,726 INFO sqlalchemy.engine.Engine 
+CREATE TABLE tenants (
+	id INTEGER NOT NULL, 
+	name VARCHAR(255) NOT NULL, 
+	domain VARCHAR(255) NOT NULL, 
+	is_active BOOLEAN NOT NULL, 
+	created_at DATETIME NOT NULL, 
+	PRIMARY KEY (id)
+)
+
+
+
+CREATE TABLE tenants (
+	id INTEGER NOT NULL, 
+	name VARCHAR(255) NOT NULL, 
+	domain VARCHAR(255) NOT NULL, 
+	is_active BOOLEAN NOT NULL, 
+	created_at DATETIME NOT NULL, 
+	PRIMARY KEY (id)
+)
+
+
+2025-08-14 07:00:56,726 INFO sqlalchemy.engine.Engine [no key 0.00014s] ()
+[no key 0.00014s] ()
+2025-08-14 07:00:56,729 INFO sqlalchemy.engine.Engine CREATE INDEX ix_tenants_id ON tenants (id)
+CREATE INDEX ix_tenants_id ON tenants (id)
+2025-08-14 07:00:56,729 INFO sqlalchemy.engine.Engine [no key 0.00015s] ()
+[no key 0.00015s] ()
+2025-08-14 07:00:56,732 INFO sqlalchemy.engine.Engine CREATE UNIQUE INDEX ix_tenants_domain ON tenants (domain)
+CREATE UNIQUE INDEX ix_tenants_domain ON tenants (domain)
+2025-08-14 07:00:56,732 INFO sqlalchemy.engine.Engine [no key 0.00014s] ()
+[no key 0.00014s] ()
+2025-08-14 07:00:56,736 INFO sqlalchemy.engine.Engine 
+CREATE TABLE workspaces (
+	id INTEGER NOT NULL, 
+	tenant_id INTEGER NOT NULL, 
+	name VARCHAR(255) NOT NULL, 
+	jira_cloud_id VARCHAR(255), 
+	created_at DATETIME NOT NULL, 
+	PRIMARY KEY (id)
+)
+
+
+
+CREATE TABLE workspaces (
+	id INTEGER NOT NULL, 
+	tenant_id INTEGER NOT NULL, 
+	name VARCHAR(255) NOT NULL, 
+	jira_cloud_id VARCHAR(255), 
+	created_at DATETIME NOT NULL, 
+	PRIMARY KEY (id)
+)
+
+
+2025-08-14 07:00:56,736 INFO sqlalchemy.engine.Engine [no key 0.00016s] ()
+[no key 0.00016s] ()
+2025-08-14 07:00:56,739 INFO sqlalchemy.engine.Engine CREATE INDEX ix_workspaces_id ON workspaces (id)
+CREATE INDEX ix_workspaces_id ON workspaces (id)
+2025-08-14 07:00:56,739 INFO sqlalchemy.engine.Engine [no key 0.00013s] ()
+[no key 0.00013s] ()
+2025-08-14 07:00:56,742 INFO sqlalchemy.engine.Engine CREATE INDEX ix_workspaces_tenant_id ON workspaces (tenant_id)
+CREATE INDEX ix_workspaces_tenant_id ON workspaces (tenant_id)
+2025-08-14 07:00:56,743 INFO sqlalchemy.engine.Engine [no key 0.00012s] ()
+[no key 0.00012s] ()
+2025-08-14 07:00:56,746 INFO sqlalchemy.engine.Engine CREATE INDEX ix_workspaces_jira_cloud_id ON workspaces (jira_cloud_id)
+CREATE INDEX ix_workspaces_jira_cloud_id ON workspaces (jira_cloud_id)
+2025-08-14 07:00:56,746 INFO sqlalchemy.engine.Engine [no key 0.00013s] ()
+[no key 0.00013s] ()
+2025-08-14 07:00:56,750 INFO sqlalchemy.engine.Engine 
+CREATE TABLE users (
+	id INTEGER NOT NULL, 
+	tenant_id INTEGER NOT NULL, 
+	workspace_id INTEGER, 
+	account_id VARCHAR(255) NOT NULL, 
+	email VARCHAR(255), 
+	display_name VARCHAR(255), 
+	is_active BOOLEAN NOT NULL, 
+	created_at DATETIME NOT NULL, 
+	PRIMARY KEY (id)
+)
+
+
+
+CREATE TABLE users (
+	id INTEGER NOT NULL, 
+	tenant_id INTEGER NOT NULL, 
+	workspace_id INTEGER, 
+	account_id VARCHAR(255) NOT NULL, 
+	email VARCHAR(255), 
+	display_name VARCHAR(255), 
+	is_active BOOLEAN NOT NULL, 
+	created_at DATETIME NOT NULL, 
+	PRIMARY KEY (id)
+)
+
+
+2025-08-14 07:00:56,750 INFO sqlalchemy.engine.Engine [no key 0.00014s] ()
+[no key 0.00014s] ()
+2025-08-14 07:00:56,753 INFO sqlalchemy.engine.Engine CREATE INDEX ix_users_workspace_id ON users (workspace_id)
+CREATE INDEX ix_users_workspace_id ON users (workspace_id)
+2025-08-14 07:00:56,753 INFO sqlalchemy.engine.Engine [no key 0.00013s] ()
+[no key 0.00013s] ()
+2025-08-14 07:00:56,756 INFO sqlalchemy.engine.Engine CREATE INDEX ix_users_id ON users (id)
+CREATE INDEX ix_users_id ON users (id)
+2025-08-14 07:00:56,756 INFO sqlalchemy.engine.Engine [no key 0.00014s] ()
+[no key 0.00014s] ()
+2025-08-14 07:00:56,760 INFO sqlalchemy.engine.Engine CREATE INDEX ix_users_tenant_id ON users (tenant_id)
+CREATE INDEX ix_users_tenant_id ON users (tenant_id)
+2025-08-14 07:00:56,760 INFO sqlalchemy.engine.Engine [no key 0.00012s] ()
+[no key 0.00012s] ()
+2025-08-14 07:00:56,763 INFO sqlalchemy.engine.Engine CREATE UNIQUE INDEX ix_users_account_id ON users (account_id)
+CREATE UNIQUE INDEX ix_users_account_id ON users (account_id)
+2025-08-14 07:00:56,763 INFO sqlalchemy.engine.Engine [no key 0.00014s] ()
+[no key 0.00014s] ()
+2025-08-14 07:00:56,766 INFO sqlalchemy.engine.Engine COMMIT
+COMMIT
+[2m2025-08-14T07:00:56.773094Z[0m [[32m[1minfo     [0m] [1mAI Scrum Master API started   [0m [36menvironment[0m=[35mdevelopment[0m
+INFO:     Started server process [10414]
 INFO:     Waiting for application startup.
 INFO:     Application startup complete.
 INFO:     Uvicorn running on http://0.0.0.0:8000 (Press CTRL+C to quit)
-INFO:     127.0.0.1:46790 - "GET /docs HTTP/1.1" 200 OK
-INFO:     127.0.0.1:60590 - "GET /healthz HTTP/1.1" 200 OK
-INFO:     127.0.0.1:60594 - "GET /version HTTP/1.1" 200 OK
-INFO:     127.0.0.1:60602 - "GET /insights/sprint?boardId=demo&accountId=demo HTTP/1.1" 200 OK
-INFO:     127.0.0.1:60610 - "GET / HTTP/1.1" 200 OK
-INFO:     127.0.0.1:34468 - "GET /healthz HTTP/1.1" 200 OK
-INFO:     127.0.0.1:34478 - "GET /version HTTP/1.1" 200 OK
-INFO:     127.0.0.1:34480 - "GET /insights/sprint?boardId=demo&accountId=demo HTTP/1.1" 200 OK
-INFO:     127.0.0.1:34484 - "GET /auth/start HTTP/1.1" 200 OK
-INFO:     127.0.0.1:34488 - "GET /openapi.json HTTP/1.1" 200 OK
